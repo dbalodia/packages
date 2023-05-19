@@ -1,0 +1,69 @@
+using Confluent.Kafka;
+using System;
+using System.Threading;
+
+namespace YourProject.Kafka.Services
+{
+    public class KafkaConsumerService<TKey, TValue>
+    {
+        private readonly ConsumerConfig _consumerConfig;
+
+        public KafkaConsumerService(ConsumerConfig consumerConfig)
+        {
+            _consumerConfig = consumerConfig;
+        }
+
+        public void Consume(string topic, Action<ConsumeResult<TKey, TValue>> onMessageReceived)
+        {
+            using (var consumer = new ConsumerBuilder<TKey, TValue>(_consumerConfig).Build())
+            {
+                consumer.Subscribe(topic);
+
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Console.CancelKeyPress += (_, e) =>
+                {
+                    e.Cancel = true;
+                    cts.Cancel();
+                };
+
+                try
+                {
+                    while (true)
+                    {
+                        var message = consumer.Consume(cts.Token);
+                        // Invoke the provided callback with the received message
+                        onMessageReceived.Invoke(message);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // The consumer was stopped
+                }
+                finally
+                {
+                    consumer.Close();
+                }
+            }
+        }
+    }
+
+    public class KafkaProducerService<TKey, TValue>
+    {
+        private readonly ProducerConfig _producerConfig;
+
+        public KafkaProducerService(ProducerConfig producerConfig)
+        {
+            _producerConfig = producerConfig;
+        }
+
+        public void Produce(string topic, TKey key, TValue value)
+        {
+            using (var producer = new ProducerBuilder<TKey, TValue>(_producerConfig).Build())
+            {
+                var message = new Message<TKey, TValue> { Key = key, Value = value };
+                producer.Produce(topic, message);
+                producer.Flush(TimeSpan.FromSeconds(10));
+            }
+        }
+    }
+}
