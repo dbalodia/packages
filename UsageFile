@@ -1,0 +1,13 @@
+// Example usage of KafkaConsumerService
+var consumerConfig = KafkaConfig.GetConsumerConfig();
+var consumerService = new KafkaConsumerService<string, string>(consumerConfig);
+consumerService.Consume("your-topic", message =>
+{
+    // Process the received message
+    Console.WriteLine($"Received message: {message.Value}");
+});
+
+// Example usage of KafkaProducerService
+var producerConfig = KafkaConfig.GetProducerConfig();
+var producerService = new KafkaProducerService<string, string>(producerConfig);
+producerService.Produce("your-topic", "key", "value");
