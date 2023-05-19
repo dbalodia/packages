@@ -1,0 +1,30 @@
+using Confluent.Kafka;
+
+namespace YourProject.Kafka.Config
+{
+    public class KafkaConfig
+    {
+        public static ProducerConfig GetProducerConfig()
+        {
+            var config = new ProducerConfig
+            {
+                BootstrapServers = "your-bootstrap-server:9092",
+                // Set other Kafka producer properties as needed
+            };
+
+            return config;
+        }
+
+        public static ConsumerConfig GetConsumerConfig()
+        {
+            var config = new ConsumerConfig
+            {
+                BootstrapServers = "your-bootstrap-server:9092",
+                GroupId = "your-consumer-group",
+                // Set other Kafka consumer properties as needed
+            };
+
+            return config;
+        }
+    }
+}
