@@ -1,0 +1,92 @@
+// KafkaServiceTests.cs
+
+public class KafkaServiceTests
+{
+    private readonly Mock<IMessageRouter<string, string>> _mockMessageRouter;
+    private readonly Mock<IServiceScopeFactory> _mockScopeFactory;
+    private readonly Mock<IConsumer<string, string>> _mockConsumer;
+
+    public KafkaServiceTests()
+    {
+        _mockMessageRouter = new Mock<IMessageRouter<string, string>>();
+        _mockScopeFactory = new Mock<IServiceScopeFactory>();
+        _mockConsumer = new Mock<IConsumer<string, string>>();
+    }
+
+    [Fact]
+    public async Task StartAsync_Should_InitializeConsumer_And_StartBackgroundTasks()
+    {
+        // Arrange
+        var appSettings = Options.Create(new AppSettings());
+        var kafkaSettings = Options.Create(new KafkaSettings());
+        var configuration = new Mock<IConfiguration>().Object;
+        var cancellationToken = CancellationToken.None;
+
+        var kafkaService = new KafkaService<string, string>(
+            _mockScopeFactory.Object,
+            appSettings,
+            kafkaSettings,
+            configuration,
+            _mockMessageRouter.Object);
+
+        _mockConsumer.Setup(c => c.Subscribe(It.IsAny<string>()));
+
+        // Act
+        await kafkaService.StartAsync(cancellationToken);
+
+        // Assert
+        _mockConsumer.Verify(c => c.Subscribe(It.IsAny<string>()), Times.Once);
+        // Verify that the background tasks have started or queued for execution
+        // Add your assertions here based on the expected behavior of the background tasks
+    }
+
+    [Fact]
+    public async Task StopAsync_Should_PerformCleanupOrShutdownLogic()
+    {
+        // Arrange
+        var appSettings = Options.Create(new AppSettings());
+        var kafkaSettings = Options.Create(new KafkaSettings());
+        var configuration = new Mock<IConfiguration>().Object;
+        var cancellationToken = CancellationToken.None;
+
+        var kafkaService = new KafkaService<string, string>(
+            _mockScopeFactory.Object,
+            appSettings,
+            kafkaSettings,
+            configuration,
+            _mockMessageRouter.Object);
+
+        // Act
+        await kafkaService.StopAsync(cancellationToken);
+
+        // Assert
+        // Add your assertions here to verify that the cleanup or shutdown logic has been executed properly
+    }
+
+    [Fact]
+    public void Dowork_Should_ConsumeMessages_And_InvokeMessageHandler()
+    {
+        // Arrange
+        var cancellationToken = CancellationToken.None;
+        var mockConsumeResult = new ConsumeResult<string, string>();
+
+        var kafkaService = new KafkaService<string, string>(
+            _mockScopeFactory.Object,
+            Options.Create(new AppSettings()),
+            Options.Create(new KafkaSettings()),
+            new Mock<IConfiguration>().Object,
+            _mockMessageRouter.Object);
+
+        _mockConsumer.Setup(c => c.Consume(It.IsAny<TimeSpan>()))
+            .Returns(mockConsumeResult);
+
+        // Act
+        kafkaService.Dowork(cancellationToken);
+
+        // Assert
+        _mockConsumer.Verify(c => c.Consume(It.IsAny<TimeSpan>()), Times.Once);
+        _mockMessageRouter.Verify(mr => mr.HandleMessage(mockConsumeResult), Times.Once);
+    }
+
+    // Write more test cases as needed to cover other scenarios and edge cases
+}
